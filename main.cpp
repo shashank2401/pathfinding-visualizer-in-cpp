@@ -17,6 +17,10 @@ const float TEXT_OFFSET_X = 10.f;
 const float TEXT_OFFSET_Y = 5.f;
 const int PANEL_WIDTH_ADDITION = 200; // Additional width for the panel
 
+// Define costs for movement
+const float CARDINAL_COST = 1.0f;
+const float DIAGONAL_COST = std::sqrt(2.0f); // Approximately 1.414
+
 // Directions for 8-directional movement (static const to avoid re-creation)
 static const std::array<sf::Vector2i, 8> directions = {
     sf::Vector2i(1, 0), sf::Vector2i(0, 1), sf::Vector2i(-1, 0), sf::Vector2i(0, -1),
@@ -178,12 +182,13 @@ int main()
                         resetGridColors(); // Reset visual grid for new animation
 
                         const int N = GRID_SIZE;
-                        std::vector<std::vector<int>> dist(N, std::vector<int>(N, std::numeric_limits<int>::max()));
+                        std::vector<std::vector<float>> dist(N, std::vector<float>(N, std::numeric_limits<float>::max()));
                         std::vector<std::vector<sf::Vector2i>> prev(N, std::vector<sf::Vector2i>(N, sf::Vector2i(-1, -1)));
 
                         struct Node
                         {
-                            int d, x, y;
+                            float d;
+                            int x, y;
                         };
                         struct Cmp
                         {
@@ -191,17 +196,19 @@ int main()
                         };
                         std::priority_queue<Node, std::vector<Node>, Cmp> pq;
 
-                        dist[startY][startX] = 0;
-                        pq.push({0, startX, startY});
+                        dist[startY][startX] = 0.0f;
+                        pq.push({0.0f, startX, startY});
                         dijkstraAnimationSteps.push_back({sf::Vector2i(startX, startY), sf::Color::Cyan}); // Start node is initially 'open'
 
                         while (!pq.empty())
                         {
                             Node node = pq.top();
                             pq.pop();
-                            int cx = node.x, cy = node.y, cd = node.d;
+                            int cx = node.x, cy = node.y;
+                            float cd = node.d;
 
-                            if (cd != dist[cy][cx])
+                            // Using a small epsilon for float comparison to account for precision loss
+                            if (cd > dist[cy][cx] + std::numeric_limits<float>::epsilon())
                                 continue; // Already found a shorter path
 
                             // Mark as visited (grey), unless it's the start/end node
@@ -219,7 +226,8 @@ int main()
                                 int ny = cy + dir.y;
                                 if (nx >= 0 && nx < N && ny >= 0 && ny < N && !wall[ny][nx])
                                 {
-                                    int nd = cd + 1; // Assuming uniform cost of 1
+                                    float moveCost = (dir.x != 0 && dir.y != 0) ? DIAGONAL_COST : CARDINAL_COST; // Calculate cost based on movement type
+                                    float nd = cd + moveCost;
                                     if (nd < dist[ny][nx])
                                     {
                                         dist[ny][nx] = nd;
@@ -237,7 +245,7 @@ int main()
                         // Reconstruct Dijkstra path and add to animation steps
                         std::vector<sf::Vector2i> finalPath; // Temporary vector for path reconstruction
                         int tx = endX, ty = endY;
-                        if (dist[ty][tx] < std::numeric_limits<int>::max())
+                        if (dist[ty][tx] < std::numeric_limits<float>::max())
                         {
                             while (!(tx == startX && ty == startY))
                             {
@@ -278,12 +286,13 @@ int main()
                         resetGridColors(); // Reset visual grid for new animation
 
                         const int N = GRID_SIZE;
-                        std::vector<std::vector<int>> dist(N, std::vector<int>(N, std::numeric_limits<int>::max()));
+                        std::vector<std::vector<float>> g_cost(N, std::vector<float>(N, std::numeric_limits<float>::max()));
                         std::vector<std::vector<sf::Vector2i>> prev(N, std::vector<sf::Vector2i>(N, sf::Vector2i(-1, -1)));
 
                         struct Node
                         {
-                            int f, g, x, y;
+                            float f, g; // f_cost and g_cost
+                            int x, y;
                         };
                         struct Cmp2
                         {
@@ -293,13 +302,13 @@ int main()
 
                         auto heuristic = [&](int x, int y)
                         {
-                            int dx = abs(x - endX);
-                            int dy = abs(y - endY);
-                            return std::max(dx, dy); // Chebyshev distance for 8-directional movement
+                            int dx = std::abs(x - endX);
+                            int dy = std::abs(y - endY);
+                            return static_cast<float>(std::max(dx, dy)); // Chebyshev distance for 8-directional movement
                         };
 
-                        dist[startY][startX] = 0;
-                        pq.push({heuristic(startX, startY), 0, startX, startY});
+                        g_cost[startY][startX] = 0.0f;
+                        pq.push({heuristic(startX, startY), 0.0f, startX, startY});
                         astarAnimationSteps.push_back({sf::Vector2i(startX, startY), sf::Color::Cyan}); // Start node is initially 'open'
 
                         while (!pq.empty())
@@ -307,9 +316,10 @@ int main()
                             Node node = pq.top();
                             pq.pop();
                             int cx = node.x, cy = node.y;
-                            int cg = node.g;
+                            float cg = node.g;
 
-                            if (cg != dist[cy][cx])
+                            // Using a small epsilon for float comparison to account for precision loss
+                            if (cg > g_cost[cy][cx] + std::numeric_limits<float>::epsilon())
                                 continue; // Already found a shorter path
 
                             // Mark as visited (grey), unless it's the start/end node
@@ -327,12 +337,13 @@ int main()
                                 int ny = cy + dir.y;
                                 if (nx >= 0 && nx < N && ny >= 0 && ny < N && !wall[ny][nx])
                                 {
-                                    int ng = cg + 1; // Assuming uniform cost of 1
-                                    if (ng < dist[ny][nx])
+                                    float moveCost = (dir.x != 0 && dir.y != 0) ? DIAGONAL_COST : CARDINAL_COST; // Calculate cost based on movement type
+                                    float ng = cg + moveCost;
+                                    if (ng < g_cost[ny][nx])
                                     {
-                                        dist[ny][nx] = ng;
+                                        g_cost[ny][nx] = ng;
                                         prev[ny][nx] = sf::Vector2i(cx, cy);
-                                        int f = ng + heuristic(nx, ny);
+                                        float f = ng + heuristic(nx, ny);
                                         pq.push({f, ng, nx, ny});
                                         // Mark as open (cyan), unless it's the start/end node
                                         if (!((nx == startX && ny == startY) || (nx == endX && ny == endY)))
@@ -346,7 +357,7 @@ int main()
                         // Reconstruct A* path and add to animation steps
                         std::vector<sf::Vector2i> finalPath; // Temporary vector for path reconstruction
                         int tx = endX, ty = endY;
-                        if (dist[ty][tx] < std::numeric_limits<int>::max())
+                        if (g_cost[ty][tx] < std::numeric_limits<float>::max())
                         {
                             while (!(tx == startX && ty == startY))
                             {

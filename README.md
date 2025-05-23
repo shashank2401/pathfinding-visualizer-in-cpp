@@ -1,14 +1,14 @@
 # Pathfinding Visualizer
 
-A C++ application built with SFML 3.0 that interactively visualizes Dijkstra's and A\* pathfinding algorithms on a grid. Users can define obstacles (walls) and observe the step-by-step search process, culminating in the display of the shortest path found by each algorithm.
+A C++ application built with SFML 3.0 that interactively visualizes Dijkstra's and A\* pathfinding algorithms on a grid. Users can define obstacles (walls) and observe the step-by-step search process, culminating in the display of the geometrically accurate shortest path found by each algorithm.
 
 ---
 
 ## Features
 
-- **Interactive Grid:** Click cells to toggle them between traversable ground and impassable walls.
-- **Dijkstra's Algorithm:** Visualize the classic shortest-path algorithm with uniform movement costs.
-- **A\* Search Algorithm:** Informed search using Chebyshev distance heuristic for 8-directional movement with uniform cost (1 unit per step).
+- **Interactive Grid:** Click cells to toggle them between traversable ground (orange) and impassable walls (white).
+- **Dijkstra's Algorithm:** Visualize the classic shortest-path algorithm with **geometric costs** (1 unit for straight moves, √2 for diagonals).
+- **A\* Search Algorithm:** Informed search using **Octile distance heuristic** for 8-directional movement with geometric costs.
 - **Animated Search:** Observe the algorithms' exploration process step-by-step:
   - **Open nodes** (considered): Cyan
   - **Visited nodes** (processed): Grey
@@ -30,9 +30,11 @@ A C++ application built with SFML 3.0 that interactively visualizes Dijkstra's a
 ---
 
 ## Implementation Notes
-- **8-directional movement** uses uniform cost (1 unit) for simplicity and visual clarity
-- **Chebyshev heuristic** ensures optimal performance with uniform costs
-- **Path costs** represent step count rather than geometric distance
+- **8-directional movement** uses geometric costs:
+  - **Straight moves**: 1.0 unit
+  - **Diagonal moves**: √2 units (~1.414)
+- **Octile distance heuristic** ensures optimal performance with geometric costs
+- **Path costs** represent true geometric distance on the grid
 
 ---
 
