@@ -1,0 +1,37 @@
+# Compiled binary files
+bin/
+*.exe
+*.dll
+
+# Object files and build artifacts
+*.o
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.lib
+*.exp
+
+# SFML build artifacts (debug/release)
+*.log
+
+# IDE/editor folders and settings
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Backup files
+*~
+*.bak
+
+# Ignore debug and release folders if created
+Debug/
+Release/
